@@ -1,6 +1,6 @@
 // src/api.js
 
-// fragments microservice API to use, defaults to localhost:8080 if not set in env
+// Fragments microservice API to use, defaults to localhost:8080 if not set in env
 const apiUrl = process.env.API_URL || "http://localhost:8080";
 
 /**
@@ -23,6 +23,27 @@ export async function getUserFragments(user) {
     const data = await res.json();
     console.log("Successfully got user fragments data", { data });
     return data;
+  } catch (err) {
+    console.error("Unable to call GET /v1/fragment", { err });
+  }
+}
+
+/**
+ * Given an authenticated user, request all fragments for this user from the
+ * fragments microservice with expanded data.
+ */
+export async function getUserFragmentsExpanded(user) {
+  // console.log('Requesting user fragments data...');
+  try {
+    const res = await fetch(`${apiUrl}/v1/fragments?expand=1`, {
+      // Generate headers with the proper Authorization bearer token to pass
+      headers: user.authorizationHeaders(),
+    });
+    if (!res.ok) {
+      throw new Error(`${res.status} ${res.statusText}`);
+    }
+    const data = await res.json();
+    console.log("Got user fragments metadata", { data });
   } catch (err) {
     console.error("Unable to call GET /v1/fragment", { err });
   }
