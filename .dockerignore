@@ -1,0 +1,17 @@
+# .dockerignore for https://github.com/Seneca-ICTOER/Intro2C
+
+# ignore the dependencies
+node_modules/
+# ignore the build and cache directories
+.docusaurus/
+build/
+# dev tools, config
+.vscode/
+.prettier*
+.git/
+.github/
+.husky/
+.git*
+*.md
+# Include the license so we don't break the license/copyright
+!LICENSE.md

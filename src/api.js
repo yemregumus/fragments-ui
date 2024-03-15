@@ -44,6 +44,7 @@ export async function getUserFragmentsExpanded(user) {
     }
     const data = await res.json();
     console.log("Got user fragments metadata", { data });
+    return data;
   } catch (err) {
     console.error("Unable to call GET /v1/fragment", { err });
   }

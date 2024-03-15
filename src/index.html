@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Fragments UI</title>
     <link rel="stylesheet" href="https://unpkg.com/bamboo.css" />
+    <link rel="stylesheet" href="/src/styles.css" />
     <script type="module" src="app.js"></script>
   </head>
   <body>
@@ -12,12 +13,15 @@
       <h2>Hello <span class="username"></span>!</h2>
     </section>
     <section>
-      <nav><button id="login">Login</button> <button id="logout">Logout</button></nav>
+      <nav>
+        <button id="login">Login</button>
+        <button id="logout">Logout</button>
+      </nav>
       <br />
       <nav>
         <form>
           <label for="textfield">Enter fragment text here to POST</label>
-          <input id="textfield" type="text" />
+          <textarea id="textfield" class="rectangle-input"></textarea>
         </form>
         <br />
         <select id="contentTypeSelect">
@@ -30,9 +34,16 @@
         <br />
         <br />
         <button id="postTpBtn">Post</button>
-
       </nav>
-      <nav>
+      <!-- Add an unordered list to display fragments -->
+      <section id="fragmentListContainerSection">
+        <h2>Fragments Posted By User</h2>
+        <div id="fragmentListContainer">
+          <div id="fragmentInnerDiv">
+            <ul id="fragmentList"></ul>
+          </div>
+        </div>
+      </section>
     </section>
   </body>
 </html>

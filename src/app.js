@@ -1,8 +1,6 @@
-// src/app.js
-
 import { Auth, getUser } from "./auth";
 import { html_beautify } from "js-beautify";
-import marked from "marked";
+import { marked } from "marked";
 import { getUserFragments, getUserFragmentsExpanded } from "./api";
 
 async function init() {
@@ -10,98 +8,119 @@ async function init() {
   const userSection = document.querySelector("#user");
   const loginBtn = document.querySelector("#login");
   const logoutBtn = document.querySelector("#logout");
-  const formSection = document.querySelector("section nav form ");
+  const formSection = document.querySelector("section nav form");
   const postTpBtn = document.querySelector("#postTpBtn");
   const textfield = document.querySelector("#textfield");
   const contentTypeSelect = document.querySelector("#contentTypeSelect");
+  const fragmentListContainerSection = document.querySelector("#fragmentListContainerSection");
+  const apiUrl = process.env.API_URL || "http://localhost:8080";
 
+  // Check if the user is already authenticated
   const user = await getUser();
 
-  // Wire up event handlers to deal with login and logout.
+  // Wire up event handlers to deal with login and logout
   loginBtn.onclick = () => {
-    // Sign-in via the Amazon Cognito Hosted UI (requires redirects), see:
-    // https://docs.amplify.aws/lib/auth/advanced/q/platform/js/#identity-pool-federation
     Auth.federatedSignIn();
   };
   logoutBtn.onclick = () => {
-    // Sign-out of the Amazon Cognito Hosted UI (requires redirects), see:
-    // https://docs.amplify.aws/lib/auth/emailpassword/q/platform/js/#sign-out
     Auth.signOut();
   };
 
-  // See if we're signed in (i.e., we'll have a `user` object)
-  //const user = await getUser();
   if (!user) {
-    // Disable the Logout button
+    // If the user is not authenticated, disable the Logout button and hide other UI elements
     logoutBtn.disabled = true;
-    formSection.style.display = "none"; // Hide the form if user is not logged in
+    formSection.style.display = "none";
     postTpBtn.style.display = "none";
     contentTypeSelect.style.display = "none";
+    fragmentListContainerSection.style.display = "none";
     return;
   }
 
-  // Log the user info for debugging purposes
-  console.log({ user });
-
-  // Update the UI to welcome the user
+  // If the user is authenticated, update the UI to welcome the user
   userSection.hidden = false;
-
-  // Show the user's username
   userSection.querySelector(".username").innerText = user.username;
-
-  // Disable the Login button
   loginBtn.disabled = true;
 
   // Do an authenticated request to the fragments API server and log the result
   getUserFragments(user);
 
-  // Update the UI to welcome the user and display fragments
-  userSection.hidden = false;
-  userSection.querySelector(".username").innerText = user.username;
-  loginBtn.disabled = true;
+  // Fetch user fragments with metadata after successful login
+  try {
+    const fragmentsData = await getUserFragmentsExpanded(user);
+    // Update UI to display fragments and metadata
+    displayFragments(fragmentsData.fragments);
+  } catch (error) {
+    console.error("Error fetching user fragments:", error);
+  }
 
   // Show the form and button if user is logged in
   formSection.style.display = "block";
   postTpBtn.style.display = "block";
 
-  const apiUrl = process.env.API_URL || "http://localhost:8080";
-  // Post button
+  // Event handler for posting fragments
   postTpBtn.onclick = async () => {
     console.log("POST fragments data...");
-
-    // Check the selected content type
     const selectedContentType = contentTypeSelect.value;
-    if (selectedContentType === "text/markdown" || selectedContentType === "text/html" || selectedContentType === "application/json") {
-      console.log(`POSTing (${selectedContentType}):`);
-      if (selectedContentType === "application/json") {
-        console.log(JSON.stringify(JSON.parse(textfield.value), null, 2));
-      } else if (selectedContentType === "text/markdown") {
-        console.log(marked(textfield.value)); // Convert Markdown to HTML and then log
-      } else if (selectedContentType === "text/html") {
-        console.log(html_beautify(textfield.value, { indent_size: 2 })); // Beautify HTML and then log
-      }
-    } else {
-      console.log("POSTing: " + textfield.value);
+    // Prepare the data based on the selected content type
+    let postData = textfield.value;
+    if (selectedContentType === "application/json") {
+      postData = JSON.stringify(JSON.parse(textfield.value), null, 2);
+    } else if (selectedContentType === "text/markdown") {
+      postData = marked(textfield.value);
+    } else if (selectedContentType === "text/html") {
+      postData = html_beautify(textfield.value, { indent_size: 2 });
     }
     try {
+      // Make a POST request to the API endpoint
       const res = await fetch(`${apiUrl}/v1/fragments`, {
         method: "POST",
-        body: textfield.value.value,
-        // Generate headers with the proper Authorization bearer token to pass
+        body: postData,
         headers: {
           Authorization: user.authorizationHeaders().Authorization,
-          "Content-Type": contentTypeSelect.value,
+          "Content-Type": selectedContentType,
         },
       });
       if (!res.ok) {
         throw new Error(`${res.status} ${res.statusText}`);
       }
-      const data = await res.json();
-      console.log("Posted user fragments data", { data });
+      // After successful posting, fetch fragments again to update UI
+      const fragmentsData = await getUserFragmentsExpanded(user);
+      // Update UI to display fragments and metadata
+      displayFragments(fragmentsData.fragments);
+      console.log("Posted user fragments data");
     } catch (err) {
-      console.error("Unable to POST to /v1/fragment", { err });
+      console.error("Unable to POST to /v1/fragment", err);
     }
   };
+}
+
+// Function to display fragments and their metadata in the UI
+function displayFragments(fragments) {
+  const fragmentList = document.getElementById("fragmentList");
+
+  // Clear existing fragment list
+  fragmentList.innerHTML = "";
+
+  // Reverse the order of the fragments array to show the newest one first
+  fragments.reverse();
+
+  // Loop through each fragment and create a fragment item
+  fragments.forEach((fragment) => {
+    const fragmentItem = document.createElement("li");
+    fragmentItem.classList.add("fragment-item");
+
+    // Create HTML content for the fragment item
+    fragmentItem.innerHTML = `
+      <div class="metadata">
+        <p>Created: ${fragment.created}</p>
+        <p>Type: ${fragment.type}</p>
+        <p>Size: ${fragment.size}</p>
+      </div>
+    `;
+
+    // Append the fragment item to the fragment list
+    fragmentList.appendChild(fragmentItem);
+  });
 }
 
 // Wait for the DOM to be ready, then start the app
