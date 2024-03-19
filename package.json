@@ -1,7 +1,7 @@
 {
   "name": "fragments-ui",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.7.0",
   "description": "ccp555",
   "source": "src/index.html",
   "browserslist": "> 0.5%, last 2 versions, not dead",
