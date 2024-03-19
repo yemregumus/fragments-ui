@@ -1,42 +1,43 @@
-###############################################
-# Stage 0: Install dependencies
-FROM node:14-alpine AS dependencies
+# Stage 1: Install the dependencies ########################################
+FROM node:20.11.1-bullseye@sha256:2056770f9050f845d41f0b025f966f2c49f0148d073ca65b110a2fbb4749774c AS dependencies
 
-ENV NODE_ENV=production
-
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+COPY package* ./
 
-# Install dependencies
-RUN npm ci --only=production
+RUN npm install
+############################################################################
 
-###############################################
-# Stage 1: Build the application
+# Stage 2: Build the side ##################################################
 FROM dependencies AS build
 
-# Set working directory
+ARG API_URL= \
+   AWS_COGNITO_POOL_ID= \
+   AWS_COGNITO_CLIENT_ID= \
+   AWS_COGNITO_HOSTED_UI_DOMAIN= \
+   OAUTH_SIGN_IN_REDIRECT_URL= \
+   OAUTH_SIGN_OUT_REDIRECT_URL= 
+
 WORKDIR /app
 
-# Copy cached dependencies from previous stage so we don't have to download
+# Copying the dependencies from Stage 1 to /application
 COPY --from=dependencies /app /app
-# Copy source code into the image
-COPY . .
 
-# Build the application
+# Copying the source code
+COPY ./src ./src
+
 RUN npm run build
+############################################################################
 
-###############################################
-# Stage 2: Deployment
-FROM node:14-alpine AS deployment
+# Stage 3: Move the build to nginx and keep running the health check #######
+FROM nginx:stable AS deploy
 
-# Put our build/ into /usr/share/nginx/html/ and host static files
-COPY --from=build /app/build/ /usr/share/nginx/html/
+# Copying the application from development stage!
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose the port the app runs on
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-   CMD curl --fail localhost:80 || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=10s --retries=3 \
+   CMD curl --fail localhost || exit 1
+
+###########################################################################

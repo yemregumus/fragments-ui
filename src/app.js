@@ -1,6 +1,6 @@
 import { Auth, getUser } from "./auth";
 import { html_beautify } from "js-beautify";
-import { marked } from "marked";
+import showdown from "showdown";
 import { getUserFragments, getUserFragmentsExpanded } from "./api";
 
 async function init() {
@@ -17,6 +17,8 @@ async function init() {
 
   // Check if the user is already authenticated
   const user = await getUser();
+  // Create a new instance of Showdown converter
+  const converter = new showdown.Converter();
 
   // Wire up event handlers to deal with login and logout
   loginBtn.onclick = () => {
@@ -66,7 +68,7 @@ async function init() {
     if (selectedContentType === "application/json") {
       postData = JSON.stringify(JSON.parse(textfield.value), null, 2);
     } else if (selectedContentType === "text/markdown") {
-      postData = marked(textfield.value);
+      postData = converter.makeHtml(textfield.value);
     } else if (selectedContentType === "text/html") {
       postData = html_beautify(textfield.value, { indent_size: 2 });
     }
