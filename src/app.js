@@ -13,7 +13,7 @@ async function init() {
   const textfield = document.querySelector("#textfield");
   const contentTypeSelect = document.querySelector("#contentTypeSelect");
   const fragmentListContainerSection = document.querySelector("#fragmentListContainerSection");
-  const apiUrl = process.env.API_URL || "http://localhost:8080";
+  const apiUrl = process.env.API_URL || "http://fragments-lb-1440859714.us-east-1.elb.amazonaws.com:80";
 
   // Check if the user is already authenticated
   const user = await getUser();
