@@ -17,6 +17,7 @@
         <button id="loginButton">Login</button>
         <button id="logoutButton">Logout</button>
       </nav>
+      <nav id="uiElements">
       <br />
       <nav>
         <form>
@@ -35,28 +36,28 @@
         <br />
         <button id="postTpBtn">Post</button>
       </nav>
+      <nav>
+        <br />
+        <label id="imageFileLabel" for="imageFile">OR Select Image File to POST</label>
+        <input id="imageFile" type="file" accept="image/*" />
+        <br />
+      </nav>
 
       <nav>
         <br />
         <form>
-          <label for="fragId">Enter id of the fragment to modify or delete</label>
+          <label id="fragIdLabel" for="fragId">Enter id of the fragment to modify or delete</label>
           <input id="fragId" type="text" />
         </form>
 
-        <label for="textfield">Make your updates below and click Modify fragment</label>
+        <label for="textfield2">Make your updates below and click Modify fragment</label>
         <textarea id="textfield2" class="rectangle-input"></textarea>
         <br />
 
         <button id="putBtn">Modify fragment</button>
-        <label for="fragId">Click to delete fragment</label>
         <button id="delBtn">Delete fragment</button>
       </nav>
-      <nav>
-        <br />
-        <label for="imageFile">Select Image File to POST</label>
-        <input id="imageFile" type="file" accept="image/*" />
-        <br />
-      </nav>
+      
       <nav>
         <br />
         <button id="expand">View existing fragments</button>
@@ -67,5 +68,6 @@
         <div id="displayFragments"></div>
       </div>
     </section>
+    </nav>
   </body>
 </html>

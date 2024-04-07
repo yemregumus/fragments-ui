@@ -15,9 +15,9 @@ async function init() {
   const textfield2 = document.querySelector("#textfield2");
   const putBtn = document.querySelector("#putBtn");
   const contentTypeSelect = document.querySelector("#contentTypeSelect");
-  const fragmentListContainerSection = document.querySelector("#fragmentListContainerSection");
   const expandBtn = document.querySelector("#expand");
   const expandBtn2 = document.querySelector("#expand2");
+  const uiElements = document.querySelector("#uiElements");
   const apiUrl = process.env.API_URL || "http://fragments-lb-1440859714.us-east-1.elb.amazonaws.com:80";
 
   // Check if the user is already authenticated
@@ -36,10 +36,7 @@ async function init() {
   if (!user) {
     // If the user is not authenticated, disable the Logout button and hide other UI elements
     logoutBtn.disabled = true;
-    formSection.style.display = "none";
-    postTpBtn.style.display = "none";
-    contentTypeSelect.style.display = "none";
-    fragmentListContainerSection.style.display = "none";
+    uiElements.style.display = "none";
     return;
   }
 
@@ -81,10 +78,7 @@ async function init() {
       if (!res.ok) {
         throw new Error(`${res.status} ${res.statusText}`);
       }
-      // After successful posting, fetch fragments again to update UI
-      const fragmentsData = await getUserFragmentsExpanded(user);
-      // Update UI to display fragments and metadata
-      displayFragments(fragmentsData.fragments);
+
       console.log("Posted user fragments data");
       alert("Posted user fragments data successfully");
     } catch (err) {
