@@ -14,8 +14,8 @@
     </section>
     <section>
       <nav>
-        <button id="login">Login</button>
-        <button id="logout">Logout</button>
+        <button id="loginButton">Login</button>
+        <button id="logoutButton">Logout</button>
       </nav>
       <br />
       <nav>
@@ -35,15 +35,37 @@
         <br />
         <button id="postTpBtn">Post</button>
       </nav>
-      <!-- Add an unordered list to display fragments -->
-      <section id="fragmentListContainerSection">
+
+      <nav>
+        <br />
+        <form>
+          <label for="fragId">Enter id of the fragment to modify or delete</label>
+          <input id="fragId" type="text" />
+        </form>
+
+        <label for="textfield">Make your updates below and click Modify fragment</label>
+        <textarea id="textfield2" class="rectangle-input"></textarea>
+        <br />
+
+        <button id="putBtn">Modify fragment</button>
+        <label for="fragId">Click to delete fragment</label>
+        <button id="delBtn">Delete fragment</button>
+      </nav>
+      <nav>
+        <br />
+        <label for="imageFile">Select Image File to POST</label>
+        <input id="imageFile" type="file" accept="image/*" />
+        <br />
+      </nav>
+      <nav>
+        <br />
+        <button id="expand">View existing fragments</button>
+        <button id="expand2">View existing fragments metadata</button>
         <h2>Fragments Posted By User</h2>
-        <div id="fragmentListContainer">
-          <div id="fragmentInnerDiv">
-            <ul id="fragmentList"></ul>
-          </div>
-        </div>
-      </section>
+      </nav>
+      <div>
+        <div id="displayFragments"></div>
+      </div>
     </section>
   </body>
 </html>

@@ -59,9 +59,16 @@ h2 {
   background-color: rgb(73, 73, 225);
 }
 
-/* Login and logout buttons */
-#login,
-#logout {
+/* buttons */
+#loginButton,
+#logoutButton,
+#putBtn,
+#delBtn,
+#getBtn,
+#postBtn,
+#imageFile,
+#expand,
+#expand2 {
   background-color: rgb(3, 3, 134);
   color: #fff;
   border: none;

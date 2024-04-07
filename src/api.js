@@ -21,6 +21,7 @@ export async function getUserFragments(user) {
       throw new Error(`${res.status} ${res.statusText}`);
     }
     const data = await res.json();
+
     console.log("Successfully got user fragments data", { data });
     return data;
   } catch (err) {

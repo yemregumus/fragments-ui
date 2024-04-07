@@ -6,13 +6,18 @@ import { getUserFragments, getUserFragmentsExpanded } from "./api";
 async function init() {
   // Get our UI elements
   const userSection = document.querySelector("#user");
-  const loginBtn = document.querySelector("#login");
-  const logoutBtn = document.querySelector("#logout");
+  const loginBtn = document.querySelector("#loginButton");
+  const logoutBtn = document.querySelector("#logoutButton");
   const formSection = document.querySelector("section nav form");
   const postTpBtn = document.querySelector("#postTpBtn");
   const textfield = document.querySelector("#textfield");
+  const delBtn = document.querySelector("#delBtn");
+  const textfield2 = document.querySelector("#textfield2");
+  const putBtn = document.querySelector("#putBtn");
   const contentTypeSelect = document.querySelector("#contentTypeSelect");
   const fragmentListContainerSection = document.querySelector("#fragmentListContainerSection");
+  const expandBtn = document.querySelector("#expand");
+  const expandBtn2 = document.querySelector("#expand2");
   const apiUrl = process.env.API_URL || "http://fragments-lb-1440859714.us-east-1.elb.amazonaws.com:80";
 
   // Check if the user is already authenticated
@@ -21,10 +26,10 @@ async function init() {
   const converter = new showdown.Converter();
 
   // Wire up event handlers to deal with login and logout
-  loginBtn.onclick = () => {
+  loginButton.onclick = () => {
     Auth.federatedSignIn();
   };
-  logoutBtn.onclick = () => {
+  logoutButton.onclick = () => {
     Auth.signOut();
   };
 
@@ -45,15 +50,6 @@ async function init() {
 
   // Do an authenticated request to the fragments API server and log the result
   getUserFragments(user);
-
-  // Fetch user fragments with metadata after successful login
-  try {
-    const fragmentsData = await getUserFragmentsExpanded(user);
-    // Update UI to display fragments and metadata
-    displayFragments(fragmentsData.fragments);
-  } catch (error) {
-    console.error("Error fetching user fragments:", error);
-  }
 
   // Show the form and button if user is logged in
   formSection.style.display = "block";
@@ -90,29 +86,197 @@ async function init() {
       // Update UI to display fragments and metadata
       displayFragments(fragmentsData.fragments);
       console.log("Posted user fragments data");
+      alert("Posted user fragments data successfully");
     } catch (err) {
       console.error("Unable to POST to /v1/fragment", err);
+      alert("Unable to Post to /v1/fragment: " + err);
     }
   };
-}
 
-// Function to display fragments and their metadata in the UI
-function displayFragments(fragments) {
-  const fragmentList = document.getElementById("fragmentList");
+  // Image upload on event listener
+  const imgUpload = async (event) => {
+    console.log("POST fragments data...");
+    console.log(event.target.files);
+    for (const file of event.target.files) {
+      const reader = new FileReader();
+      reader.readAsArrayBuffer(file);
+      reader.onload = async (item) => {
+        const res = await fetch(`${apiUrl}/v1/fragments`, {
+          method: "POST",
+          body: item.target.result,
+          headers: {
+            // Generate headers with the proper Authorization bearer token to pass
+            Authorization: user.authorizationHeaders().Authorization,
+            "Content-Type": file.type,
+          },
+        });
+        const data = await res.json();
+        console.log("Posted image as a fragment", { data });
+      };
+    }
+  };
+  document.querySelector("#imageFile").addEventListener("change", imgUpload);
 
-  // Clear existing fragment list
-  fragmentList.innerHTML = "";
+  // Display fragments
+  expandBtn.onclick = async () => {
+    console.log("Requesting user fragments data...");
+    try {
+      const res = await fetch(`${apiUrl}/v1/fragments?expand=1`, {
+        // Generate headers with the proper Authorization bearer token to pass
+        headers: user.authorizationHeaders(),
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      console.log("Got user fragments data", { data });
+      // Loop through res fragments and fetch
+      document.getElementById("displayFragments").innerHTML = "";
+      for (const fragment of data.fragments) {
+        try {
+          const res = await fetch(`${apiUrl}/v1/fragments/${fragment.id}`, {
+            // Generate headers with the proper Authorization bearer token to pass
+            headers: user.authorizationHeaders(),
+          });
+          if (!res.ok) {
+            throw new Error(`${res.status} ${res.statusText}`);
+          }
+          // Populate with text fragment or image fragment
+          if (fragment.type.startsWith("text") || fragment.type.startsWith("application")) {
+            const data = await res.text();
+            document.getElementById("displayFragments").appendChild(document.createElement("hr"));
+            document.getElementById("displayFragments").appendChild(document.createTextNode("Fragment id: " + fragment.id));
+            document.getElementById("displayFragments").appendChild(document.createElement("br"));
+            document.getElementById("displayFragments").appendChild(document.createTextNode(data));
+          } else if (fragment.type.startsWith("image")) {
+            const data = await res.arrayBuffer();
+            const rawData = Buffer.from(data);
+            const imageData = new Blob([rawData], { type: fragment.type });
+            const image = new Image();
+            const reader = new FileReader();
+            reader.readAsDataURL(imageData);
+            reader.addEventListener("load", function () {
+              image.src = reader.result;
+              image.alt = fragment.id;
+            });
+            document.getElementById("displayFragments").appendChild(document.createElement("hr"));
+            document.getElementById("displayFragments").appendChild(document.createTextNode("Fragment id: " + fragment.id));
+            document.getElementById("displayFragments").appendChild(document.createElement("br"));
+            document.getElementById("displayFragments").appendChild(image);
+          }
+        } catch (err) {
+          console.error("Unable to call GET /v1/fragments/:id", { err });
+        }
+      }
+    } catch (err) {
+      console.error("Unable to call GET /v1/fragment", { err });
+    }
+  };
 
-  // Reverse the order of the fragments array to show the newest one first
-  fragments.reverse();
+  expandBtn2.onclick = async () => {
+    console.log("Requesting user fragments data...");
+    try {
+      const res = await fetch(`${apiUrl}/v1/fragments?expand=1`, {
+        // Generate headers with the proper Authorization bearer token to pass
+        headers: user.authorizationHeaders(),
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      console.log("Got user fragments metadata", { data });
+      // Loop through res fragments and fetch
+      document.getElementById("displayFragments").innerHTML = "";
+      for (const fragment of data.fragments) {
+        try {
+          const res = await fetch(`${apiUrl}/v1/fragments/${fragment.id}/info`, {
+            // Generate headers with the proper Authorization bearer token to pass
+            headers: user.authorizationHeaders(),
+          });
+          if (!res.ok) {
+            throw new Error(`${res.status} ${res.statusText}`);
+          }
+          // Populate with fragment metadata
+          const data = await res.text();
+          document.getElementById("displayFragments").appendChild(document.createElement("hr"));
+          document.getElementById("displayFragments").appendChild(document.createTextNode("Fragment id: " + fragment.id));
+          document.getElementById("displayFragments").appendChild(document.createElement("br"));
+          document.getElementById("displayFragments").appendChild(document.createTextNode(data));
+        } catch (err) {
+          console.error("Unable to call GET /v1/fragments/:id", { err });
+        }
+      }
+    } catch (err) {
+      console.error("Unable to call GET /v1/fragment", { err });
+    }
+  };
 
-  // Loop through each fragment and create a fragment item
-  fragments.forEach((fragment) => {
-    const fragmentItem = document.createElement("li");
-    fragmentItem.classList.add("fragment-item");
+  putBtn.onclick = async () => {
+    console.log("PUT fragments data...");
+    console.log("PUT: " + document.querySelector("#fragId").value + " with value: " + document.querySelector("#textfield2").value);
+    const modId = document.querySelector("#fragId").value;
+    try {
+      const res = await fetch(`${apiUrl}/v1/fragments/${modId}`, {
+        method: "PUT",
+        body: document.querySelector("#textfield2").value,
+        // Generate headers with the proper Authorization bearer token to pass
+        headers: {
+          Authorization: user.authorizationHeaders().Authorization,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      console.log("PUT user fragments data", { data });
+      alert("Updated fragments data successfully");
+    } catch (err) {
+      console.error("Unable to PUT to /v1/fragment", { err });
+      alert("Unable to update fragments data: ", { err });
+    }
+  };
 
-    // Create HTML content for the fragment item
-    fragmentItem.innerHTML = `
+  delBtn.onclick = async () => {
+    console.log("DELETE fragment");
+    console.log("DELETE fragment: " + document.querySelector("#fragId").value);
+    const modId = document.querySelector("#fragId").value;
+    try {
+      const res = await fetch(`${apiUrl}/v1/fragments/${modId}`, {
+        method: "DELETE",
+        // Generate headers with the proper Authorization bearer token to pass
+        headers: {
+          Authorization: user.authorizationHeaders().Authorization,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      console.log("DELETE user fragments data", { data });
+      alert("Deleted fragments data successfully");
+    } catch (err) {
+      console.error("Unable to DELETE to /v1/fragment", { err });
+      alert("Unable to delete fragments data: ", { err });
+    }
+  };
+
+  // Function to display fragments and their metadata in the UI
+  function displayFragments(fragments) {
+    const fragmentList = document.getElementById("fragmentList");
+
+    // Clear existing fragment list
+    fragmentList.innerHTML = "";
+
+    // Reverse the order of the fragments array to show the newest one first
+    fragments.reverse();
+
+    // Loop through each fragment and create a fragment item
+    fragments.forEach((fragment) => {
+      const fragmentItem = document.createElement("li");
+      fragmentItem.classList.add("fragment-item");
+
+      // Create HTML content for the fragment item
+      fragmentItem.innerHTML = `
       <div class="metadata">
         <p>Created: ${fragment.created}</p>
         <p>Type: ${fragment.type}</p>
@@ -120,10 +284,10 @@ function displayFragments(fragments) {
       </div>
     `;
 
-    // Append the fragment item to the fragment list
-    fragmentList.appendChild(fragmentItem);
-  });
+      // Append the fragment item to the fragment list
+      fragmentList.appendChild(fragmentItem);
+    });
+  }
 }
 
-// Wait for the DOM to be ready, then start the app
 addEventListener("DOMContentLoaded", init);
