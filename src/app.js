@@ -18,7 +18,12 @@ async function init() {
   const expandBtn = document.querySelector("#expand");
   const expandBtn2 = document.querySelector("#expand2");
   const uiElements = document.querySelector("#uiElements");
-  const apiUrl = process.env.API_URL || "http://fragments-lb-1440859714.us-east-1.elb.amazonaws.com:80";
+  const apiUrl = process.env.API_URL || "http://ec2-18-234-238-105.compute-1.amazonaws.com:8080";
+  const convertTextId = document.querySelector("#fragIdTextConversation");
+  const convertTextBtn = document.querySelector("#convertBtn");
+  const convertImgBtn = document.querySelector("#convertImgBtn");
+  const imageType = document.querySelector("#convertImgSelect");
+  const fragIdImg = document.querySelector("#fragIdImg");
 
   // Check if the user is already authenticated
   const user = await getUser();
@@ -106,6 +111,7 @@ async function init() {
         });
         const data = await res.json();
         console.log("Posted image as a fragment", { data });
+        alert("Posted image as a fragment");
       };
     }
   };
@@ -142,6 +148,7 @@ async function init() {
             document.getElementById("displayFragments").appendChild(document.createTextNode("Fragment id: " + fragment.id));
             document.getElementById("displayFragments").appendChild(document.createElement("br"));
             document.getElementById("displayFragments").appendChild(document.createTextNode(data));
+            console.log("Got user fragments metadata", { data });
           } else if (fragment.type.startsWith("image")) {
             const data = await res.arrayBuffer();
             const rawData = Buffer.from(data);
@@ -157,6 +164,7 @@ async function init() {
             document.getElementById("displayFragments").appendChild(document.createTextNode("Fragment id: " + fragment.id));
             document.getElementById("displayFragments").appendChild(document.createElement("br"));
             document.getElementById("displayFragments").appendChild(image);
+            console.log("Got user fragments metadata", { data });
           }
         } catch (err) {
           console.error("Unable to call GET /v1/fragments/:id", { err });
@@ -196,6 +204,7 @@ async function init() {
           document.getElementById("displayFragments").appendChild(document.createTextNode("Fragment id: " + fragment.id));
           document.getElementById("displayFragments").appendChild(document.createElement("br"));
           document.getElementById("displayFragments").appendChild(document.createTextNode(data));
+          console.log("Got user fragments metadata", { data });
         } catch (err) {
           console.error("Unable to call GET /v1/fragments/:id", { err });
         }
@@ -280,6 +289,137 @@ async function init() {
 
       // Append the fragment item to the fragment list
       fragmentList.appendChild(fragmentItem);
+    });
+  }
+
+  convertTextBtn.onclick = async () => {
+    console.log("Converting text fragment...");
+    const convertTextIdValue = convertTextId.value;
+    const convertTextTypeValue = convertTextTypeSelect.value;
+    try {
+      const res = await fetch(`${apiUrl}/v1/fragments/${convertTextIdValue}`, {
+        // Generate headers with the proper Authorization bearer token to pass
+        headers: user.authorizationHeaders(),
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      // Convert the text based on the selected type
+      let convertedText;
+      const data = await res.text();
+      if (convertTextTypeValue === "text/markdown") {
+        // Convert to Markdown
+        convertedText = converter.makeMarkdown(data);
+      } else if (convertTextTypeValue === "text/html") {
+        // Convert to HTML
+        convertedText = converter.makeHtml(data);
+      } else if (convertTextTypeValue === "application/json") {
+        // Convert to JSON
+        convertedText = JSON.stringify({ text: data });
+      } else {
+        // If the selected type is plain text or plain text with charset
+        // Do nothing, keep the original text
+        convertedText = data;
+      }
+
+      // PUT the converted fragment
+      const putRes = await fetch(`${apiUrl}/v1/fragments/${convertTextIdValue}`, {
+        method: "PUT",
+        body: convertedText,
+        headers: {
+          Authorization: user.authorizationHeaders().Authorization,
+          "Content-Type": convertTextTypeValue,
+        },
+      });
+      if (!putRes.ok) {
+        throw new Error(`${putRes.status} ${putRes.statusText}`);
+      }
+      console.log("Converted and updated text fragment successfully", convertedText);
+      alert("Converted and updated text fragment successfully");
+    } catch (err) {
+      console.error("Unable to convert and update text fragment:", err);
+      alert("Unable to convert and update text fragment: " + err);
+    }
+  };
+
+  convertImgBtn.onclick = async () => {
+    const imageId = fragIdImg.value;
+    const type = imageType.value;
+
+    console.log("Converting image fragment...");
+
+    console.log("Fragment ID:", imageId);
+    console.log("Conversion Type:", type);
+
+    try {
+      const imageId = fragIdImg.value;
+      const type = imageType.value;
+      const res = await fetch(`${apiUrl}/v1/fragments/${imageId}`, {
+        headers: user.authorizationHeaders(),
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+
+      // Convert the image based on the selected type
+      const blobData = await res.blob();
+      const convertedBlob = await convertImageToType(blobData, type);
+
+      // PUT the converted fragment
+      const putRes = await fetch(`${apiUrl}/v1/fragments/${imageId}`, {
+        method: "PUT",
+        body: convertedBlob,
+        headers: {
+          Authorization: user.authorizationHeaders().Authorization,
+          "Content-Type": type,
+        },
+      });
+      if (!putRes.ok) {
+        throw new Error(`${putRes.status} ${putRes.statusText}`);
+      }
+
+      console.log("Converted and updated image fragment successfully");
+      alert("Converted and updated image fragment successfully");
+    } catch (err) {
+      console.error("Unable to convert and update image fragment:", err);
+      //alert("Unable to convert and update image fragment: " + err);
+    }
+  };
+
+  // Function to convert image blob to the specified type
+  async function convertImageToType(imageBlob, conversionType) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = function (event) {
+        const img = new Image();
+
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          ctx.drawImage(img, 0, 0);
+
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, conversionType);
+        };
+
+        img.onerror = function () {
+          reject(new Error("Error loading image"));
+        };
+
+        img.src = event.target.result;
+      };
+
+      reader.onerror = function () {
+        reject(new Error("Error reading blob data"));
+      };
+
+      reader.readAsDataURL(imageBlob);
     });
   }
 }

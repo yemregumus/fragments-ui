@@ -68,7 +68,11 @@ h2 {
 #postBtn,
 #imageFile,
 #expand,
-#expand2 {
+#expand2,
+#convertBtn,
+#imgConvertBtn,
+#imageFilePut,
+#convertImgBtn {
   background-color: rgb(3, 3, 134);
   color: #fff;
   border: none;

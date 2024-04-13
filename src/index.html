@@ -56,6 +56,39 @@
 
         <button id="putBtn">Modify fragment</button>
         <button id="delBtn">Delete fragment</button>
+
+        <label id="conversionLabel" for="fragId">Enter id of the text fragment for conversion</label>
+        <input id="fragIdTextConversation" type="text" />   
+        <br />
+        <br />
+        <select id="convertTextTypeSelect">
+          <option value="text/plain">text/plain;</option>
+          <option value="text/plain; charset=utf-8">text/plain; charset=utf-8</option>
+          <option value="text/markdown">text/markdown</option>
+          <option value="text/html">text/html</option>
+          <option value="application/json">application/json</option>
+        </select>
+        <br />
+        <br />
+        <button id="convertBtn">Text Conversion</button>
+        <br />
+        <br />
+
+        <label id="imgConversionLabel" for="fragIdImg">Enter id of the image fragment for conversion</label>
+        <input id="fragIdImg" type="text" />
+        <br />
+        <br />
+        <select id="convertImgSelect">
+          <option value="image/png">PNG Image</option>
+          <option value="image/jpeg">JPEG Image</option>
+          <option value="image/webp">WebP Image</option>
+          <option value="image/avif">AVIF Image</option>
+          <option value="image/gif">GIF Image</option>
+        </select>
+        <br />
+        <br />
+        <button id="convertImgBtn">Image Conversion</button>
+
       </nav>
       
       <nav>
